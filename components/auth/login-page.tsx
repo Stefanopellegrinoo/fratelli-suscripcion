@@ -1,0 +1,149 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
+import { login, type User } from "@/lib/auth-service"
+
+interface LoginPageProps {
+  onLogin: (role: "CLIENT" | "ADMIN") => void
+}
+
+export function LoginPage({ onLogin }: LoginPageProps) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!email || !password) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor ingresá tu email y contraseña.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Call the auth service (simulates API call)
+      const response = await login(email, password)
+
+      if (response.success && response.user) {
+        const user: User = response.user
+
+        // Route based ONLY on user.role from the API response
+        // This makes the code agnostic of email addresses
+        if (user.role === "ADMIN") {
+          toast({
+            title: `Bienvenido, ${user.name}`,
+            description: "Accediendo al panel de cocina...",
+          })
+          onLogin("ADMIN")
+        } else if (user.role === "CLIENT") {
+          toast({
+            title: `Bienvenido, ${user.name}`,
+            description: "Accediendo a tu dashboard...",
+          })
+          onLogin("CLIENT")
+        }
+      } else {
+        toast({
+          title: "Error de autenticación",
+          description: response.error || "Credenciales inválidas.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al iniciar sesión.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Card className="w-full max-w-md border-none shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl">
+        <CardHeader className="text-center space-y-4 pb-6">
+          <div>
+            <h1 className="text-5xl font-serif font-bold text-primary italic mb-2">Fratelli</h1>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-medium">Pasta Artesanal</p>
+          </div>
+          <div className="space-y-1.5">
+            <CardTitle className="text-2xl font-serif text-foreground">Bienvenido de nuevo</CardTitle>
+            <CardDescription className="text-sm">Ingresá a tu cuenta para continuar</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs uppercase tracking-wider font-medium">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 rounded-xl border-border/60 focus:border-primary/40 bg-background"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-xs uppercase tracking-wider font-medium">
+                Contraseña
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-11 rounded-xl border-border/60 focus:border-primary/40 bg-background"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="text-right">
+              <Link href="#" className="text-sm text-primary hover:text-primary/80 transition-colors font-medium">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-semibold tracking-wide text-sm"
+              disabled={isLoading}
+            >
+              {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              ¿No tenés cuenta?{" "}
+              <Link href="/register" className="text-primary hover:text-primary/80 transition-colors font-semibold">
+                Registrate
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
