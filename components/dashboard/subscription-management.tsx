@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, Pause, AlertCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { subscriptionService, plansService } from "@/services"
 
 interface Plan {
   id: string
@@ -27,43 +28,50 @@ interface Plan {
   popular?: boolean
 }
 
-const plans: Plan[] = [
-  {
-    id: "piccolo",
-    name: "Piccolo",
-    boxes: 4,
-    price: "$25.000",
-    features: ["4 cajas por mes", "Pastas clásicas", "Entrega semanal"],
-  },
-  {
-    id: "medio",
-    name: "Medio",
-    boxes: 6,
-    price: "$35.000",
-    features: ["6 cajas por mes", "Clásicas y rellenas", "Entrega semanal", "Recetas exclusivas"],
-  },
-  {
-    id: "famiglia",
-    name: "Famiglia",
-    boxes: 8,
-    price: "$45.000",
-    features: [
-      "8 cajas por mes",
-      "Todas las categorías",
-      "Entrega prioritaria",
-      "Acceso Premium",
-      "Descuentos especiales",
-    ],
-    popular: true,
-  },
-]
-
 export function SubscriptionManagement() {
-  const [currentPlan] = useState("famiglia")
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [currentPlan, setCurrentPlan] = useState("famiglia")
+  const [currentSubscriptionId, setCurrentSubscriptionId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showPauseDialog, setShowPauseDialog] = useState(false)
   const [showChangePlanDialog, setShowChangePlanDialog] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [plansData, subData] = await Promise.all([plansService.getAll(), subscriptionService.getMySubscription()])
+
+        // Transform plans to component format
+        const formattedPlans = plansData.map((p) => ({
+          id: p.id.toString(),
+          name: p.name,
+          boxes: p.boxesPerMonth,
+          price: `$${p.price.toLocaleString("es-AR")}`,
+          features: p.benefits,
+          popular: p.name === "Famiglia",
+        }))
+        setPlans(formattedPlans)
+
+        if (subData) {
+          setCurrentPlan(subData.planId.toString())
+          setCurrentSubscriptionId(subData.id)
+        }
+      } catch (error) {
+        console.error("Error fetching plans:", error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los planes",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   const handleChangePlanClick = (plan: Plan) => {
     setSelectedPlan(plan)
@@ -80,17 +88,26 @@ export function SubscriptionManagement() {
     setShowChangePlanDialog(false)
   }
 
-  const handlePauseClick = () => {
-    setShowPauseDialog(true)
+  const handleConfirmPause = async () => {
+    if (!currentSubscriptionId) return
+    try {
+      await subscriptionService.pause(currentSubscriptionId)
+      toast({
+        title: "Suscripción pausada",
+        description: "No recibirás tu caja el próximo mes. Podés reactivarla cuando quieras.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo pausar la suscripción",
+        variant: "destructive",
+      })
+    }
+    setShowPauseDialog(false)
   }
 
-  const handleConfirmPause = () => {
-    toast({
-      title: "Suscripción pausada",
-      description: "No recibirás tu caja el próximo mes. Podés reactivarla cuando quieras.",
-      variant: "destructive",
-    })
-    setShowPauseDialog(false)
+  const handlePauseClick = () => {
+    setShowPauseDialog(true)
   }
 
   return (
@@ -109,7 +126,9 @@ export function SubscriptionManagement() {
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-medium mb-1">
                 Tu Plan Actual
               </p>
-              <h2 className="text-3xl font-serif font-bold text-foreground italic">Plan Famiglia</h2>
+              <h2 className="text-3xl font-serif font-bold text-foreground italic">
+                {plans.find((p) => p.id === currentPlan)?.name || "Plan Famiglia"}
+              </h2>
             </div>
             <Badge className="bg-accent text-accent-foreground px-4 py-2 text-sm">Activo</Badge>
           </div>
@@ -120,13 +139,17 @@ export function SubscriptionManagement() {
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-medium mb-1">
                 Cajas por Mes
               </p>
-              <p className="text-2xl font-serif font-bold text-foreground">8 cajas</p>
+              <p className="text-2xl font-serif font-bold text-foreground">
+                {plans.find((p) => p.id === currentPlan)?.boxes || 8}
+              </p>
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-medium mb-1">
                 Precio Mensual
               </p>
-              <p className="text-2xl font-serif font-bold text-foreground">$45.000</p>
+              <p className="text-2xl font-serif font-bold text-foreground">
+                {plans.find((p) => p.id === currentPlan)?.price || "$45.000"}
+              </p>
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-medium mb-1">

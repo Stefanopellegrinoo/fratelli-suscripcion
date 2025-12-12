@@ -1,34 +1,94 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, MapPin, Phone, Mail, Save } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { usersService } from "@/services"
 
 export function UserProfile() {
   const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
-    nombre: "Mario",
-    apellido: "Rossi",
-    email: "mario.rossi@email.com",
-    telefono: "+54 11 5555-1234",
-    calle: "Av. Corrientes",
-    numero: "1234",
-    ciudad: "Buenos Aires",
+    nombre: "",
+    apellido: "",
+    email: "",
+    telefono: "",
+    calle: "",
+    numero: "",
+    ciudad: "",
   })
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true)
+        const profile = await usersService.getMyProfile()
+        setFormData({
+          nombre: profile.nombre,
+          apellido: profile.apellido,
+          email: profile.email,
+          telefono: profile.telefono,
+          calle: profile.calle,
+          numero: profile.numero,
+          ciudad: profile.ciudad,
+        })
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el perfil",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProfile()
+  }, [])
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = () => {
-    toast({
-      title: "Perfil actualizado",
-      description: "Tus datos fueron guardados correctamente.",
-    })
+  const handleSave = async () => {
+    try {
+      await usersService.updateMyProfile({
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        telefono: formData.telefono,
+        calle: formData.calle,
+        numero: formData.numero,
+        ciudad: formData.ciudad,
+      })
+      toast({
+        title: "Perfil actualizado",
+        description: "Tus datos fueron guardados correctamente.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="h-24 bg-secondary/40 rounded animate-pulse" />
+        <Card className="border-0 card-elevated-lg rounded-2xl">
+          <CardContent className="p-8 space-y-6 animate-pulse">
+            <div className="h-10 bg-secondary/40 rounded" />
+            <div className="h-10 bg-secondary/40 rounded" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { authService } from "@/services"
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -20,16 +21,35 @@ export function RegisterForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate registration
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const formData = new FormData(e.currentTarget)
 
-    toast({
-      title: "Account created!",
-      description: "Welcome to Fratelli. Start building your first box.",
-    })
+      await authService.register({
+        name: formData.get("name") as string,
+        lastName: formData.get("lastName") as string,
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+        street: formData.get("street") as string,
+        number: formData.get("number") as string,
+        city: formData.get("city") as string,
+        phone: formData.get("phone") as string,
+      })
 
-    router.push("/dashboard")
-    setIsLoading(false)
+      toast({
+        title: "¡Cuenta creada!",
+        description: "Bienvenido a Fratelli. Comienza armando tu primera caja.",
+      })
+
+      router.push("/login")
+    } catch (error: any) {
+      toast({
+        title: "Error al crear cuenta",
+        description: error.response?.data?.message || "Ocurrió un error. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -42,6 +62,7 @@ export function RegisterForm() {
           </Label>
           <Input
             id="name"
+            name="name"
             type="text"
             placeholder="Mario"
             required
@@ -54,6 +75,7 @@ export function RegisterForm() {
           </Label>
           <Input
             id="lastName"
+            name="lastName"
             type="text"
             placeholder="Rossi"
             required
@@ -69,6 +91,7 @@ export function RegisterForm() {
         </Label>
         <Input
           id="email"
+          name="email"
           type="email"
           placeholder="mario@example.com"
           required
@@ -84,6 +107,7 @@ export function RegisterForm() {
         <div className="relative">
           <Input
             id="password"
+            name="password"
             type={showPassword ? "text" : "password"}
             placeholder="Create a password"
             required
@@ -111,6 +135,7 @@ export function RegisterForm() {
             </Label>
             <Input
               id="street"
+              name="street"
               type="text"
               placeholder="Via Roma"
               required
@@ -123,6 +148,7 @@ export function RegisterForm() {
             </Label>
             <Input
               id="number"
+              name="number"
               type="text"
               placeholder="123"
               required
@@ -137,6 +163,7 @@ export function RegisterForm() {
           </Label>
           <Input
             id="city"
+            name="city"
             type="text"
             placeholder="Santiago"
             required
@@ -152,6 +179,7 @@ export function RegisterForm() {
         </Label>
         <Input
           id="phone"
+          name="phone"
           type="tel"
           placeholder="+56 9 1234 5678"
           required
@@ -164,7 +192,7 @@ export function RegisterForm() {
         disabled={isLoading}
         className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base mt-2"
       >
-        {isLoading ? "Creating account..." : "Sign Up"}
+        {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
       </Button>
     </form>
   )

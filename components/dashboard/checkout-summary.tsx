@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { paymentService } from "@/services/payment.service"
+import { paymentService } from "@/services"
 
 interface CheckoutItem {
   id: number

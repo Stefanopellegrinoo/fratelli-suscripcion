@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, Package, MapPin, Clock, Eye } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ordersService } from "@/services"
 
 interface OrderItem {
   name: string
@@ -36,124 +37,51 @@ interface Order {
   items?: OrderItem[]
 }
 
-// Dummy delivery data
-const initialOrders: Order[] = [
-  {
-    id: 1,
-    userName: "Mario Rossi",
-    address: "Av. Corrientes 1234, CABA",
-    boxContent: "2x Spaghetti, 3x Ravioles Ricota",
-    status: "Pendiente",
-    phone: "+54 11 5555-1234",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Spaghetti", quantity: 2 },
-      { name: "Ravioles Ricota y Espinaca", quantity: 3 },
-    ],
-  },
-  {
-    id: 2,
-    userName: "Giulia Bianchi",
-    address: "Av. Santa Fe 456, CABA",
-    boxContent: "4x Fettuccine, 2x Tortellini",
-    status: "Pendiente",
-    phone: "+54 11 5555-2345",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Fettuccine", quantity: 4 },
-      { name: "Tortellini Boloñesa", quantity: 2 },
-    ],
-  },
-  {
-    id: 3,
-    userName: "Luca Verdi",
-    address: "Av. Cabildo 789, CABA",
-    boxContent: "1x Tagliatelle Trufa, 2x Penne",
-    status: "Pendiente",
-    phone: "+54 11 5555-3456",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Tagliatelle con Trufa", quantity: 1 },
-      { name: "Penne", quantity: 2 },
-    ],
-  },
-  {
-    id: 4,
-    userName: "Sofia Colombo",
-    address: "Av. Rivadavia 321, CABA",
-    boxContent: "3x Sorrentinos, 2x Agnolotti",
-    status: "Entregado",
-    phone: "+54 11 5555-4567",
-    deliveryDate: "15 Dic 2025",
-    items: [
-      { name: "Sorrentinos Jamón y Queso", quantity: 3 },
-      { name: "Agnolotti del Plin", quantity: 2 },
-    ],
-  },
-  {
-    id: 5,
-    userName: "Marco Ferrari",
-    address: "Av. Belgrano 654, CABA",
-    boxContent: "2x Ravioles Langosta, 1x Pappardelle",
-    status: "Pendiente",
-    phone: "+54 11 5555-5678",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Ravioles de Langosta", quantity: 2 },
-      { name: "Pappardelle Porcini", quantity: 1 },
-    ],
-  },
-  {
-    id: 6,
-    userName: "Elena Ricci",
-    address: "Av. Callao 987, CABA",
-    boxContent: "4x Mix Clásica, 2x Premium",
-    status: "Entregado",
-    phone: "+54 11 5555-6789",
-    deliveryDate: "15 Dic 2025",
-    items: [
-      { name: "Spaghetti", quantity: 2 },
-      { name: "Fettuccine", quantity: 2 },
-      { name: "Tagliatelle con Trufa", quantity: 2 },
-    ],
-  },
-  {
-    id: 7,
-    userName: "Andrea Marino",
-    address: "Av. Pueyrredón 147, CABA",
-    boxContent: "3x Mix Rellena, 1x Spaghetti",
-    status: "Pendiente",
-    phone: "+54 11 5555-7890",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Sorrentinos Jamón y Queso", quantity: 2 },
-      { name: "Ravioles Ricota y Espinaca", quantity: 1 },
-      { name: "Spaghetti", quantity: 1 },
-    ],
-  },
-  {
-    id: 8,
-    userName: "Chiara Greco",
-    address: "Av. Las Heras 258, CABA",
-    boxContent: "2x Ravioles, 2x Tortellini, 2x Penne",
-    status: "Pendiente",
-    phone: "+54 11 5555-8901",
-    deliveryDate: "18 Dic 2025",
-    items: [
-      { name: "Ravioles Ricota y Espinaca", quantity: 2 },
-      { name: "Tortellini Boloñesa", quantity: 2 },
-      { name: "Penne", quantity: 2 },
-    ],
-  },
-]
-
 export function DeliveryLogistics() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false)
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const data = await ordersService.getAll()
+        const formattedOrders = data.map((order) => ({
+          id: order.id,
+          userName: `Usuario #${order.userId}`,
+          address: order.deliveryAddress,
+          boxContent: order.items.map((item) => `${item.quantity}x ${item.productName}`).join(", "),
+          status: order.status === "DELIVERED" ? ("Entregado" as const) : ("Pendiente" as const),
+          phone: "+54 11 5555-0000",
+          deliveryDate: new Date(order.deliveryDate).toLocaleDateString("es-AR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+          items: order.items.map((item) => ({
+            name: item.productName,
+            quantity: item.quantity,
+          })),
+        }))
+        setOrders(formattedOrders)
+      } catch (error) {
+        console.error("Error fetching orders:", error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los pedidos",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchOrders()
+  }, [])
 
   const pendingCount = orders.filter((o) => o.status === "Pendiente").length
   const deliveredCount = orders.filter((o) => o.status === "Entregado").length
@@ -163,13 +91,21 @@ export function DeliveryLogistics() {
     setShowDeliveryDialog(true)
   }
 
-  const handleConfirmDelivered = () => {
+  const handleConfirmDelivered = async () => {
     if (selectedOrderId) {
-      setOrders((prev) =>
-        prev.map((order) => (order.id === selectedOrderId ? { ...order, status: "Entregado" as const } : order)),
-      )
-
-      toast({ title: "Pedido entregado", description: `Pedido #${selectedOrderId} marcado como entregado.` })
+      try {
+        await ordersService.markAsDelivered(selectedOrderId)
+        setOrders((prev) =>
+          prev.map((order) => (order.id === selectedOrderId ? { ...order, status: "Entregado" as const } : order)),
+        )
+        toast({ title: "Pedido entregado", description: `Pedido #${selectedOrderId} marcado como entregado.` })
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo marcar como entregado",
+          variant: "destructive",
+        })
+      }
     }
     setShowDeliveryDialog(false)
   }
@@ -177,6 +113,19 @@ export function DeliveryLogistics() {
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order)
     setIsDetailsOpen(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-24 bg-secondary/40 rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 bg-secondary/40 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, Package, PackageOpen, MapPin, Calendar, DollarSign } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { ordersService } from "@/services"
+import { useToast } from "@/hooks/use-toast"
 
 interface OrderItem {
   name: string
@@ -25,77 +27,6 @@ interface Order {
   items: OrderItem[]
 }
 
-const orderHistory: Order[] = [
-  {
-    id: 1,
-    date: "15 Oct 2025",
-    summary: "4x Fettuccine, 2x Sorrentinos, 2x Ravioles",
-    total: "$38.000",
-    status: "Entregado",
-    deliveryAddress: "Av. Corrientes 1234, Buenos Aires",
-    deliveryTime: "14:30 hs",
-    items: [
-      { name: "Fettuccine", quantity: 4, price: "$14.000" },
-      { name: "Sorrentinos Jamón y Queso", quantity: 2, price: "$11.000" },
-      { name: "Ravioles Ricota y Espinaca", quantity: 2, price: "$11.000" },
-    ],
-  },
-  {
-    id: 2,
-    date: "8 Oct 2025",
-    summary: "3x Spaghetti, 3x Agnolotti, 2x Penne",
-    total: "$36.000",
-    status: "Entregado",
-    deliveryAddress: "Av. Corrientes 1234, Buenos Aires",
-    deliveryTime: "16:45 hs",
-    items: [
-      { name: "Spaghetti", quantity: 3, price: "$10.500" },
-      { name: "Agnolotti del Plin", quantity: 3, price: "$15.000" },
-      { name: "Penne", quantity: 2, price: "$7.000" },
-    ],
-  },
-  {
-    id: 3,
-    date: "1 Oct 2025",
-    summary: "2x Tagliatelle Trufa, 4x Ravioles Ricota, 2x Fettuccine",
-    total: "$45.000",
-    status: "Entregado",
-    deliveryAddress: "Av. Corrientes 1234, Buenos Aires",
-    deliveryTime: "15:20 hs",
-    items: [
-      { name: "Tagliatelle con Trufa", quantity: 2, price: "$17.000" },
-      { name: "Ravioles Ricota y Espinaca", quantity: 4, price: "$20.000" },
-      { name: "Fettuccine", quantity: 2, price: "$7.000" },
-    ],
-  },
-  {
-    id: 4,
-    date: "24 Sep 2025",
-    summary: "6x Sorrentinos Jamón, 2x Penne",
-    total: "$40.000",
-    status: "Entregado",
-    deliveryAddress: "Av. Corrientes 1234, Buenos Aires",
-    deliveryTime: "17:10 hs",
-    items: [
-      { name: "Sorrentinos Jamón y Queso", quantity: 6, price: "$33.000" },
-      { name: "Penne", quantity: 2, price: "$7.000" },
-    ],
-  },
-  {
-    id: 5,
-    date: "17 Sep 2025",
-    summary: "4x Spaghetti, 4x Fettuccine",
-    total: "$28.000",
-    status: "Entregado",
-    deliveryAddress: "Av. Corrientes 1234, Buenos Aires",
-    deliveryTime: "14:00 hs",
-    items: [
-      { name: "Spaghetti", quantity: 4, price: "$14.000" },
-      { name: "Fettuccine", quantity: 4, price: "$14.000" },
-    ],
-  },
-]
-
 const statusColors: Record<Order["status"], string> = {
   Entregado: "bg-emerald-100 text-emerald-800",
   "En Camino": "bg-amber-100 text-amber-800",
@@ -103,13 +34,75 @@ const statusColors: Record<Order["status"], string> = {
 }
 
 export function OrderHistory() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
-  const hasOrders = orderHistory.length > 0
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const data = await ordersService.getMyOrders()
+        const formattedOrders = data.map((order) => ({
+          id: order.id,
+          date: new Date(order.deliveryDate).toLocaleDateString("es-AR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+          summary: order.items.map((item) => `${item.quantity}x ${item.productName}`).join(", "),
+          total: `$${order.totalAmount.toLocaleString("es-AR")}`,
+          status:
+            order.status === "DELIVERED"
+              ? ("Entregado" as const)
+              : order.status === "PENDING"
+                ? ("En Camino" as const)
+                : ("Preparando" as const),
+          deliveryAddress: order.deliveryAddress,
+          deliveryTime: order.deliveryTime,
+          items: order.items.map((item) => ({
+            name: item.productName,
+            quantity: item.quantity,
+            price: `$${item.price.toLocaleString("es-AR")}`,
+          })),
+        }))
+        setOrders(formattedOrders)
+      } catch (error) {
+        console.error("Error fetching orders:", error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los pedidos",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchOrders()
+  }, [])
+
+  const hasOrders = orders.length > 0
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order)
     setIsDetailsOpen(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="h-24 bg-secondary/40 rounded animate-pulse" />
+        <Card className="border-0 card-elevated-lg rounded-2xl">
+          <CardContent className="p-8 space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-secondary/40 rounded animate-pulse" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -137,7 +130,7 @@ export function OrderHistory() {
               </p>
             </div>
           ) : (
-            orderHistory.map((order) => (
+            orders.map((order) => (
               <div
                 key={order.id}
                 className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-secondary/30 rounded-xl hover:bg-secondary/50 transition-colors"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { plansService } from "@/services"
 
 interface Plan {
   id: number
@@ -25,38 +26,9 @@ interface Plan {
   benefits: string[]
 }
 
-const initialPlans: Plan[] = [
-  {
-    id: 1,
-    name: "Piccolo",
-    price: 25000,
-    boxLimit: 4,
-    benefits: ["4 cajas por mes", "Selección de pastas clásicas", "Entrega semanal", "Recetas incluidas"],
-  },
-  {
-    id: 2,
-    name: "Medio",
-    price: 35000,
-    boxLimit: 6,
-    benefits: ["6 cajas por mes", "Pastas clásicas y rellenas", "Entrega flexible", "Recetas incluidas"],
-  },
-  {
-    id: 3,
-    name: "Famiglia",
-    price: 45000,
-    boxLimit: 8,
-    benefits: [
-      "8 cajas por mes",
-      "Pastas clásicas y rellenas",
-      "Acceso a selecciones premium",
-      "Horarios de entrega prioritarios",
-      "Recetas exclusivas",
-    ],
-  },
-]
-
 export function PlansManagement() {
-  const [plans, setPlans] = useState<Plan[]>(initialPlans)
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [loading, setLoading] = useState(true)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -66,6 +38,33 @@ export function PlansManagement() {
     benefits: [""],
   })
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoading(true)
+        const data = await plansService.getAll()
+        const formattedPlans = data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          boxLimit: p.boxesPerMonth,
+          benefits: p.benefits,
+        }))
+        setPlans(formattedPlans)
+      } catch (error) {
+        console.error("Error fetching plans:", error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los planes",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPlans()
+  }, [])
 
   const openCreateDialog = () => {
     setEditingPlan(null)
@@ -110,7 +109,7 @@ export function PlansManagement() {
     }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validation
     if (!formData.name.trim()) {
       toast({
@@ -144,36 +143,73 @@ export function PlansManagement() {
     // Filter out empty benefits
     const filteredBenefits = formData.benefits.filter((b) => b.trim() !== "")
 
-    if (editingPlan) {
-      // Update existing plan
-      setPlans((prev) =>
-        prev.map((plan) =>
-          plan.id === editingPlan.id
-            ? { ...plan, name: formData.name, price, boxLimit, benefits: filteredBenefits }
-            : plan,
-        ),
-      )
-      toast({
-        title: "Plan actualizado",
-        description: `El plan ${formData.name} se actualizó correctamente`,
-      })
-    } else {
-      // Create new plan
-      const newPlan: Plan = {
-        id: Math.max(...plans.map((p) => p.id), 0) + 1,
-        name: formData.name,
-        price,
-        boxLimit,
-        benefits: filteredBenefits,
+    try {
+      if (editingPlan) {
+        // Update existing plan
+        await plansService.update(editingPlan.id, {
+          name: formData.name,
+          price,
+          boxesPerMonth: boxLimit,
+          benefits: filteredBenefits,
+          active: true,
+        })
+        setPlans((prev) =>
+          prev.map((plan) =>
+            plan.id === editingPlan.id
+              ? { ...plan, name: formData.name, price, boxLimit, benefits: filteredBenefits }
+              : plan,
+          ),
+        )
+        toast({
+          title: "Plan actualizado",
+          description: `El plan ${formData.name} se actualizó correctamente`,
+        })
+      } else {
+        // Create new plan
+        const newPlan = await plansService.create({
+          name: formData.name,
+          description: "",
+          price,
+          boxesPerMonth: boxLimit,
+          benefits: filteredBenefits,
+          active: true,
+        })
+        setPlans((prev) => [
+          ...prev,
+          {
+            id: newPlan.id,
+            name: newPlan.name,
+            price: newPlan.price,
+            boxLimit: newPlan.boxesPerMonth,
+            benefits: newPlan.benefits,
+          },
+        ])
+        toast({
+          title: "Plan creado",
+          description: `El plan ${formData.name} se creó correctamente`,
+        })
       }
-      setPlans((prev) => [...prev, newPlan])
+      setIsDialogOpen(false)
+    } catch (error) {
       toast({
-        title: "Plan creado",
-        description: `El plan ${formData.name} se creó correctamente`,
+        title: "Error",
+        description: "No se pudo guardar el plan",
+        variant: "destructive",
       })
     }
+  }
 
-    setIsDialogOpen(false)
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-24 bg-secondary/40 rounded animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-64 bg-secondary/40 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (

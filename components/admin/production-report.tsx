@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarIcon, ChefHat } from "lucide-react"
@@ -14,19 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-
-const productionData = [
-  { id: 1, name: "Spaghetti", category: "Clásica", units: 85, inStock: true },
-  { id: 2, name: "Fettuccine", category: "Clásica", units: 62, inStock: true },
-  { id: 3, name: "Penne", category: "Clásica", units: 48, inStock: true },
-  { id: 4, name: "Sorrentinos Jamón y Queso", category: "Rellena", units: 150, inStock: true },
-  { id: 5, name: "Ravioles Ricota y Espinaca", category: "Rellena", units: 124, inStock: true },
-  { id: 6, name: "Tortellini Boloñesa", category: "Rellena", units: 98, inStock: true },
-  { id: 7, name: "Agnolotti del Plin", category: "Rellena", units: 76, inStock: true },
-  { id: 8, name: "Tagliatelle Trufa", category: "Premium", units: 32, inStock: false },
-  { id: 9, name: "Ravioles de Langosta", category: "Premium", units: 28, inStock: true },
-  { id: 10, name: "Pappardelle Porcini", category: "Premium", units: 24, inStock: true },
-]
+import { ordersService, productsService } from "@/services"
 
 const categoryColors: Record<string, string> = {
   Clásica: "bg-secondary text-secondary-foreground",
@@ -36,20 +24,82 @@ const categoryColors: Record<string, string> = {
 
 export function ProductionReport() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [stockStatus, setStockStatus] = useState<Record<number, boolean>>(
-    Object.fromEntries(productionData.map((p) => [p.id, p.inStock])),
-  )
+  const [productionData, setProductionData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stockStatus, setStockStatus] = useState<Record<number, boolean>>({})
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchProductionReport = async () => {
+      try {
+        setLoading(true)
+        const dateStr = format(selectedDate, "yyyy-MM-dd")
+        const report = await ordersService.getProductionReport(dateStr)
+
+        const products = await productsService.getAll()
+        const stockMap = Object.fromEntries(products.map((p) => [p.id, p.inStock]))
+        setStockStatus(stockMap)
+
+        const formattedData = report.map((item, index) => ({
+          id: index + 1,
+          name: item.productName,
+          category: item.category,
+          units: item.totalUnits,
+          inStock: true,
+        }))
+        setProductionData(formattedData)
+      } catch (error) {
+        console.error("Error fetching production report:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el reporte de producción",
+          variant: "destructive",
+        })
+        setProductionData([
+          { id: 1, name: "Spaghetti", category: "Clásica", units: 85, inStock: true },
+          { id: 2, name: "Fettuccine", category: "Clásica", units: 62, inStock: true },
+          { id: 3, name: "Penne", category: "Clásica", units: 48, inStock: true },
+          { id: 4, name: "Sorrentinos Jamón y Queso", category: "Rellena", units: 150, inStock: true },
+          { id: 5, name: "Ravioles Ricota y Espinaca", category: "Rellena", units: 124, inStock: true },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProductionReport()
+  }, [selectedDate])
 
   const totalUnits = productionData.reduce((sum, item) => sum + item.units, 0)
 
-  const handleStockToggle = (productId: number, newStatus: boolean) => {
-    setStockStatus((prev) => ({ ...prev, [productId]: newStatus }))
-    const product = productionData.find((p) => p.id === productId)
-    toast({
-      title: "Stock actualizado",
-      description: `${product?.name} marcado como ${newStatus ? "disponible" : "agotado"}`,
-    })
+  const handleStockToggle = async (productId: number, newStatus: boolean) => {
+    try {
+      await productsService.toggleStock(productId, newStatus)
+      setStockStatus((prev) => ({ ...prev, [productId]: newStatus }))
+      const product = productionData.find((p) => p.id === productId)
+      toast({
+        title: "Stock actualizado",
+        description: `${product?.name} marcado como ${newStatus ? "disponible" : "agotado"}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el stock",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-24 bg-secondary/40 rounded animate-pulse" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-secondary/40 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { productsService, type Product } from "@/services/products.service"
+import { productsService, type Product } from "@/services"
 
 export function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([])

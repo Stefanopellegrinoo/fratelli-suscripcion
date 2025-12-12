@@ -9,27 +9,44 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/context/AuthContext"
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const router = useRouter()
   const { toast } = useToast()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate login
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const user = await login(email, password)
 
-    toast({
-      title: "Welcome back!",
-      description: "You have been signed in successfully.",
-    })
+      toast({
+        title: "¡Bienvenido!",
+        description: "Has iniciado sesión exitosamente.",
+      })
 
-    router.push("/dashboard")
-    setIsLoading(false)
+      // Route based on user role
+      if (user.role === "ADMIN") {
+        router.push("/admin")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error al iniciar sesión",
+        description: error.response?.data?.message || "Credenciales inválidas. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -43,6 +60,8 @@ export function LoginForm() {
           type="email"
           placeholder="mario@example.com"
           required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="h-12 rounded-xl bg-card border-border/50 focus:border-primary"
         />
       </div>
@@ -57,6 +76,8 @@ export function LoginForm() {
             type={showPassword ? "text" : "password"}
             placeholder="Enter your password"
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="h-12 rounded-xl bg-card border-border/50 focus:border-primary pr-12"
           />
           <button
@@ -74,7 +95,7 @@ export function LoginForm() {
         disabled={isLoading}
         className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base"
       >
-        {isLoading ? "Signing in..." : "Sign In"}
+        {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
       </Button>
     </form>
   )

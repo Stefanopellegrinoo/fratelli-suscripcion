@@ -3,19 +3,79 @@
 import { Calendar, CreditCard, Package } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { subscriptionService, plansService } from "@/services"
 
 interface SubscriptionStatusProps {
   onBuildBox: () => void
 }
 
 export function SubscriptionStatus({ onBuildBox }: SubscriptionStatusProps) {
-  const subscription = {
+  const [subscription, setSubscription] = useState({
     plan: "Famiglia",
     status: "Activo",
     nextDelivery: "15 de Marzo, 2024",
     nextPayment: "10 de Marzo, 2024",
     boxesPerMonth: 8,
     price: "$45.000",
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        setLoading(true)
+        const subData = await subscriptionService.getMySubscription()
+        if (subData) {
+          const planData = await plansService.getById(subData.planId)
+          setSubscription({
+            plan: planData.name,
+            status: subData.status === "ACTIVE" ? "Activo" : subData.status === "PAUSED" ? "Pausado" : "Cancelado",
+            nextDelivery: subData.nextDeliveryDate
+              ? new Date(subData.nextDeliveryDate).toLocaleDateString("es-AR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "No programada",
+            nextPayment: "10 de Marzo, 2024",
+            boxesPerMonth: planData.boxesPerMonth,
+            price: `$${planData.price.toLocaleString("es-AR")}`,
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching subscription:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSubscription()
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="border-0 card-elevated-lg rounded-3xl overflow-hidden">
+        <CardContent className="p-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-secondary/40 rounded w-1/3" />
+            <div className="grid grid-cols-3 gap-8">
+              <div className="space-y-3">
+                <div className="h-4 bg-secondary/40 rounded w-1/2" />
+                <div className="h-10 bg-secondary/40 rounded" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 bg-secondary/40 rounded w-1/2" />
+                <div className="h-10 bg-secondary/40 rounded" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 bg-secondary/40 rounded w-1/2" />
+                <div className="h-10 bg-secondary/40 rounded" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
