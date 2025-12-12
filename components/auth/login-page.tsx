@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { login, type User } from "@/lib/auth-service"
+import { useAuth } from "@/context/AuthContext"
 
 interface LoginPageProps {
   onLogin: (role: "CLIENT" | "ADMIN") => void
@@ -20,6 +20,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const { login: authLogin } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,26 +37,27 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(true)
 
     try {
-      // Call the auth service (simulates API call)
-      const response = await login(email, password)
+      const response = await authLogin(email, password)
 
-      if (response.success && response.user) {
-        const user: User = response.user
+      if (response.success) {
+        const userData = localStorage.getItem("user_data")
+        if (userData) {
+          const user = JSON.parse(userData)
 
-        // Route based ONLY on user.role from the API response
-        // This makes the code agnostic of email addresses
-        if (user.role === "ADMIN") {
-          toast({
-            title: `Bienvenido, ${user.name}`,
-            description: "Accediendo al panel de cocina...",
-          })
-          onLogin("ADMIN")
-        } else if (user.role === "CLIENT") {
-          toast({
-            title: `Bienvenido, ${user.name}`,
-            description: "Accediendo a tu dashboard...",
-          })
-          onLogin("CLIENT")
+          // Route based on user role
+          if (user.role === "ADMIN") {
+            toast({
+              title: `Bienvenido, ${user.name}`,
+              description: "Accediendo al panel de cocina...",
+            })
+            onLogin("ADMIN")
+          } else if (user.role === "CLIENT") {
+            toast({
+              title: `Bienvenido, ${user.name}`,
+              description: "Accediendo a tu dashboard...",
+            })
+            onLogin("CLIENT")
+          }
         }
       } else {
         toast({

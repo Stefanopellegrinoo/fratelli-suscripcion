@@ -1,9 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { ShieldCheck, Package } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { useToast } from "@/hooks/use-toast"
+import { paymentService } from "@/services/payment.service"
 
 interface CheckoutItem {
   id: number
@@ -19,14 +22,56 @@ interface CheckoutSummaryProps {
   items: CheckoutItem[]
   deliveryDate?: string
   timeSlot?: string
+  subscriptionId?: number
 }
 
-export function CheckoutSummary({ open, onOpenChange, items, deliveryDate, timeSlot }: CheckoutSummaryProps) {
+export function CheckoutSummary({
+  open,
+  onOpenChange,
+  items,
+  deliveryDate,
+  timeSlot,
+  subscriptionId,
+}: CheckoutSummaryProps) {
+  const [isProcessing, setIsProcessing] = useState(false)
+  const { toast } = useToast()
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
 
-  const handlePayment = () => {
-    console.log("Procesando pago con Mercado Pago...")
+  const handlePayment = async () => {
+    if (!subscriptionId) {
+      toast({
+        title: "Error",
+        description: "No se encontró la suscripción.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      // Call backend to create Mercado Pago payment link
+      const { paymentUrl } = await paymentService.createSubscriptionLink(subscriptionId)
+
+      toast({
+        title: "Redirigiendo a Mercado Pago",
+        description: "Serás redirigido al sitio de pago seguro...",
+      })
+
+      // Redirect to Mercado Pago
+      setTimeout(() => {
+        paymentService.redirectToPayment(paymentUrl)
+      }, 1000)
+    } catch (error) {
+      console.error("[v0] Error creating payment link:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el pago. Intentá nuevamente.",
+        variant: "destructive",
+      })
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -92,13 +137,14 @@ export function CheckoutSummary({ open, onOpenChange, items, deliveryDate, timeS
 
           <Button
             onClick={handlePayment}
+            disabled={isProcessing}
             className="w-full py-6 text-base font-semibold rounded-xl transition-all duration-200 hover:brightness-110"
             style={{ backgroundColor: "#009EE3", color: "#FFFFFF" }}
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
-            Pagar con Mercado Pago
+            {isProcessing ? "Procesando..." : "Pagar con Mercado Pago"}
           </Button>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

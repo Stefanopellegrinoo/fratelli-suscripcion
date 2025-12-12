@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { ChefHat, MapPin, Users, LogOut, Menu } from "lucide-react"
+import { ChefHat, MapPin, Users, LogOut, Menu, Package, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,8 @@ export function AdminLayout({ children, activeView, onNavigate, onLogout }: Admi
   const navItems = [
     { id: "production" as AdminViewType, label: "Producción", icon: ChefHat },
     { id: "logistics" as AdminViewType, label: "Logística", icon: MapPin },
+    { id: "products" as AdminViewType, label: "Pastas", icon: Package },
+    { id: "plans" as AdminViewType, label: "Planes", icon: Layers },
     { id: "clients" as AdminViewType, label: "Clientes", icon: Users },
   ]
 

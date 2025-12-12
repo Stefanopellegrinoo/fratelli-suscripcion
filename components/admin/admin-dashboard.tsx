@@ -5,9 +5,11 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { ProductionReport } from "@/components/admin/production-report"
 import { DeliveryLogistics } from "@/components/admin/delivery-logistics"
 import { ClientsManagement } from "@/components/admin/clients-management"
+import { ProductManagement } from "@/components/admin/product-management"
+import { PlansManagement } from "@/components/admin/plans-management"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export type AdminViewType = "production" | "logistics" | "clients"
+export type AdminViewType = "production" | "logistics" | "clients" | "products" | "plans"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -46,6 +48,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           {activeView === "production" && <ProductionReport />}
           {activeView === "logistics" && <DeliveryLogistics />}
           {activeView === "clients" && <ClientsManagement />}
+          {activeView === "products" && <ProductManagement />}
+          {activeView === "plans" && <PlansManagement />}
         </>
       )}
     </AdminLayout>
