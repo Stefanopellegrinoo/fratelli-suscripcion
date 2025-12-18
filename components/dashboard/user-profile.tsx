@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { User, MapPin, Phone, Mail, Save } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,18 +8,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { usersService } from "@/services"
-
+import { fi, se } from "date-fns/locale"
+const initialData = {
+  nombre: "",
+  apellido: "",
+  telefono: "",
+  email: "",
+  direccion: "",
+}
 export function UserProfile() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [edit, setEdit] = useState(false)
+const [originalData, setOriginalData] = useState({
+  nombre: "",
+  apellido: "",
+  telefono: "",
+  email: "",
+  direccion: "",
+})
   const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
     email: "",
     telefono: "",
-    calle: "",
-    numero: "",
-    ciudad: "",
+    direccion: "",
   })
 
   useEffect(() => {
@@ -27,14 +40,21 @@ export function UserProfile() {
       try {
         setLoading(true)
         const profile = await usersService.getMyProfile()
+
         setFormData({
           nombre: profile.nombre,
           apellido: profile.apellido,
           email: profile.email,
           telefono: profile.telefono,
-          calle: profile.calle,
-          numero: profile.numero,
-          ciudad: profile.ciudad,
+          direccion: profile.direccion,
+        })
+
+        setOriginalData({
+          nombre: profile.nombre,
+          apellido: profile.apellido,
+          email: profile.email,
+          telefono: profile.telefono,
+          direccion: profile.direccion,
         })
       } catch (error) {
         console.error("Error fetching profile:", error)
@@ -56,13 +76,12 @@ export function UserProfile() {
 
   const handleSave = async () => {
     try {
+      setLoading(true)
       await usersService.updateMyProfile({
         nombre: formData.nombre,
         apellido: formData.apellido,
         telefono: formData.telefono,
-        calle: formData.calle,
-        numero: formData.numero,
-        ciudad: formData.ciudad,
+        direccion: formData.direccion
       })
       toast({
         title: "Perfil actualizado",
@@ -74,9 +93,13 @@ export function UserProfile() {
         description: "No se pudo actualizar el perfil",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
   }
 
+  const hasChanges = JSON.stringify(originalData) !== JSON.stringify(formData)
+  console.log("hasChanges", initialData, formData, hasChanges)
   if (loading) {
     return (
       <div className="space-y-8">
@@ -90,6 +113,7 @@ export function UserProfile() {
       </div>
     )
   }
+
 
   return (
     <div className="space-y-8">
@@ -148,6 +172,7 @@ export function UserProfile() {
               </Label>
               <Input
                 value={formData.telefono}
+                type="num"
                 onChange={(e) => handleChange("telefono", e.target.value)}
                 className="py-6 rounded-xl border-border/60 bg-transparent"
               />
@@ -168,29 +193,11 @@ export function UserProfile() {
             <div className="md:col-span-2 space-y-2">
               <Label className="text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground">Calle</Label>
               <Input
-                value={formData.calle}
-                onChange={(e) => handleChange("calle", e.target.value)}
+                value={formData.direccion}
+                onChange={(e) => handleChange("direccion", e.target.value)}
                 className="py-6 rounded-xl border-border/60 bg-transparent"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground">
-                Número
-              </Label>
-              <Input
-                value={formData.numero}
-                onChange={(e) => handleChange("numero", e.target.value)}
-                className="py-6 rounded-xl border-border/60 bg-transparent"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground">Ciudad</Label>
-            <Input
-              value={formData.ciudad}
-              onChange={(e) => handleChange("ciudad", e.target.value)}
-              className="py-6 rounded-xl border-border/60 bg-transparent"
-            />
           </div>
         </CardContent>
       </Card>
@@ -198,6 +205,7 @@ export function UserProfile() {
       <div className="flex justify-end">
         <Button
           onClick={handleSave}
+          disabled={loading || !hasChanges}
           className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base rounded-xl font-medium tracking-wide"
         >
           <Save className="mr-2 h-5 w-5" />

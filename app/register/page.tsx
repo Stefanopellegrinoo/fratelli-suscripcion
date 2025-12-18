@@ -5,7 +5,7 @@ import { RegisterForm } from "@/components/auth/register-form"
 export default function RegisterPage() {
   return (
     <AuthLayout
-      imageQuery="fresh pasta making flour eggs tomatoes basil rustic italian kitchen"
+      imageQuery="artisanal-fresh-pasta-italian-kitchen-warm-lightin.jpg"
       imageAlt="Fresh pasta making ingredients"
     >
       <div className="w-full max-w-md mx-auto">
@@ -13,16 +13,15 @@ export default function RegisterPage() {
           <Link href="/" className="inline-block mb-6">
             <h1 className="text-3xl font-serif font-bold text-primary italic">Fratelli</h1>
           </Link>
-          <h2 className="text-2xl font-serif text-foreground mb-2">Welcome to Fratelli</h2>
-          <p className="text-muted-foreground">Create your account to start your pasta journey</p>
+          <h2 className="text-2xl font-serif text-foreground mb-2">Bienvenido a Fratelli</h2>
         </div>
 
         <RegisterForm />
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Already have an account?{" "}
+          ya tenes cuenta?{" "}
           <Link href="/login" className="text-primary font-medium hover:underline">
-            Sign in
+            ingresa aqui
           </Link>
         </p>
       </div>

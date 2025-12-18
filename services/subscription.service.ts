@@ -1,18 +1,21 @@
 import axiosInstance from "@/lib/axios"
 
 export interface Subscription {
+  nextPaymentDate: SetStateAction<string | null>
   id: number
   userId: number
   planId: number
   status: "ACTIVE" | "PAUSED" | "CANCELLED"
   startDate: string
   endDate?: string
+  deliveryPreference?: string
   nextDeliveryDate?: string
 }
 
 interface CreateSubscriptionData {
   planId: number
   startDate?: string
+  preferenciaEntrega?: string
 }
 
 export const subscriptionService = {
@@ -76,4 +79,9 @@ export const subscriptionService = {
     const response = await axiosInstance.put<Subscription>(`/suscripciones/${id}/reanudar`)
     return response.data
   },
+  // subscriptionService
+async changePlan(newPlanId: number): Promise<Subscription> {
+    const response = await axiosInstance.put<Subscription>("/suscripciones/me/change-plan", { newPlanId })
+    return response.data
+},
 }

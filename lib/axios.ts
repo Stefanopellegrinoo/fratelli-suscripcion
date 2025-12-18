@@ -1,13 +1,15 @@
 import axios from "axios"
 
 // Base URL for the Spring Boot backend
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://june-point-independently-fcc.trycloudflare.com/api"
+// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
   },
   timeout: 10000,
 })

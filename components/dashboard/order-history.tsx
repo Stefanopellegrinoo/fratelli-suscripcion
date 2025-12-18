@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils"
 import { ordersService } from "@/services"
 import { useToast } from "@/hooks/use-toast"
+import { format, parseISO } from "date-fns"
+import { es } from "date-fns/locale"
 
 interface OrderItem {
   name: string
@@ -21,7 +23,7 @@ interface Order {
   date: string
   summary: string
   total: string
-  status: "Entregado" | "En Camino" | "Preparando"
+  status: "Entregado" | "En Camino" | "Preparando" | "Modificar"
   deliveryAddress?: string
   deliveryTime?: string
   items: OrderItem[]
@@ -31,6 +33,7 @@ const statusColors: Record<Order["status"], string> = {
   Entregado: "bg-emerald-100 text-emerald-800",
   "En Camino": "bg-amber-100 text-amber-800",
   Preparando: "bg-blue-100 text-blue-800",
+  Modificar: "bg-purple-100 text-purple-800",
 }
 
 export function OrderHistory() {
@@ -41,45 +44,70 @@ export function OrderHistory() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        const data = await ordersService.getMyOrders()
-        const formattedOrders = data.map((order) => ({
+   const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const data = await ordersService.getMyOrders()
+      console.log("Fetched orders:", data)
+
+      const formattedOrders = data.map((order: any) => {
+        // 1. Calcular el Total (porque el DTO no trae el total general, solo items)
+        // Asumimos que item.price viene del back (ver nota abajo)
+        const calculatedTotal = order.items.reduce((acc: number, item: any) => {
+            return acc + (item.quantity * (item.price || 0))
+        }, 0)
+
+        // 2. Mapeo de Estados (Lógica de Negocio)
+        let uiStatus: "Entregado" | "Modificar" | "En Camino" | "Preparando" = "Preparando" 
+        
+        if (order.status === "DELIVERED" || order.status === "ENTREGADO") {
+            uiStatus = "Entregado"
+        } else if (order.status === "PENDIENTE") {
+            // Si está pendiente, es que recién lo crearon -> "Preparando"
+            uiStatus = "Preparando" 
+        } else if (order.status === "MODIFICADO") {
+            uiStatus = "Modificar"
+        }
+        // Si tuvieras un estado "DISPATCHED" en el back, ese sería "En Camino"
+
+        return {
           id: order.id,
-          date: new Date(order.deliveryDate).toLocaleDateString("es-AR", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-          summary: order.items.map((item) => `${item.quantity}x ${item.productName}`).join(", "),
-          total: `$${order.totalAmount.toLocaleString("es-AR")}`,
-          status:
-            order.status === "DELIVERED"
-              ? ("Entregado" as const)
-              : order.status === "PENDING"
-                ? ("En Camino" as const)
-                : ("Preparando" as const),
-          deliveryAddress: order.deliveryAddress,
-          deliveryTime: order.deliveryTime,
-          items: order.items.map((item) => ({
+          // Usamos parseISO para evitar errores de zona horaria con strings "YYYY-MM-DD"
+          date: format(parseISO(order.deliveryDate), "d 'de' MMM, yyyy", { locale: es }),
+          
+          summary: order.items.map((item: any) => `${item.quantity}x ${item.productName}`).join(", "),
+          
+          // Usamos el total calculado
+          total: `$${calculatedTotal.toLocaleString("es-AR")}`,
+          
+          status: uiStatus,
+          
+          deliveryAddress: order.deliveryAddress || "Dirección guardada", // Fallback
+          deliveryTime: order.deliveryTime || "09:00 - 18:00",
+          
+          items: order.items.map((item: any) => ({
             name: item.productName,
             quantity: item.quantity,
-            price: `$${item.price.toLocaleString("es-AR")}`,
+            price: `$${(item.price || 0).toLocaleString("es-AR")}`,
           })),
-        }))
-        setOrders(formattedOrders)
-      } catch (error) {
-        console.error("Error fetching orders:", error)
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los pedidos",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
+        }
+      })
+      
+      // Ordenamos por fecha (del más nuevo al más viejo) por las dudas
+      formattedOrders.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      setOrders(formattedOrders)
+    } catch (error) {
+      console.error("Error fetching orders:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los pedidos",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+  }
     fetchOrders()
   }, [])
 
@@ -145,7 +173,11 @@ export function OrderHistory() {
                   <p className="text-sm text-muted-foreground">{order.summary}</p>
                 </div>
                 <div className="flex items-center gap-4 justify-between md:justify-end">
-                  <p className="text-xl font-serif font-bold text-foreground">{order.total}</p>
+                  {/* <p className="text-xl font-serif font-bold text-foreground">{order.total}</p> */}
+                  {order.status === "Modificar" ?  (
+                    <p className="text-sm font-medium text-purple-600 italic">Modificar Orden</p>
+                  ): (
+
                   <Button
                     variant="ghost"
                     size="sm"
@@ -155,6 +187,7 @@ export function OrderHistory() {
                     <Eye className="h-4 w-4 md:mr-2" />
                     <span className="hidden md:inline">Ver Detalle</span>
                   </Button>
+                  )}
                 </div>
               </div>
             ))
@@ -224,21 +257,21 @@ export function OrderHistory() {
                         </div>
                         <p className="font-medium text-foreground">{item.name}</p>
                       </div>
-                      <p className="font-serif font-semibold text-foreground">{item.price}</p>
+                      {/* <p className="font-serif font-semibold text-foreground">{item.price}</p> */}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-border">
+              {/* <div className="flex items-center justify-between pt-4 border-t border-border">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-muted-foreground" />
                   <p className="text-lg font-medium text-muted-foreground">Total</p>
                 </div>
                 <p className="text-3xl font-serif font-bold text-foreground">{selectedOrder.total}</p>
-              </div>
+              </div> */}
 
-              <div className="flex gap-3 pt-2">
+              {/* <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
                   className="flex-1 rounded-xl py-6 bg-transparent"
@@ -249,7 +282,7 @@ export function OrderHistory() {
                 <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6">
                   Repetir Pedido
                 </Button>
-              </div>
+              </div> */}
             </div>
           )}
         </DialogContent>

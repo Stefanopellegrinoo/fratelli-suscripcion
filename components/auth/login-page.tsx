@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,15 +12,17 @@ import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
 
 interface LoginPageProps {
-  onLogin: (role: "CLIENT" | "ADMIN") => void
+  onLogin: (role: "CLIENTE" | "ADMIN") => void
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPageForm() {
+    const router = useRouter()
+  
+    const { login, user } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const { login: authLogin } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,55 +36,50 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       return
     }
 
-    setIsLoading(true)
+   setIsLoading(true)
 
-    try {
-      const response = await authLogin(email, password)
+    // 1. Llamamos al login y esperamos el RESULTADO (objeto)
+    const result = await login(email, password)
 
-      if (response.success) {
-        const userData = localStorage.getItem("user_data")
-        if (userData) {
-          const user = JSON.parse(userData)
-
-          // Route based on user role
-          if (user.role === "ADMIN") {
-            toast({
-              title: `Bienvenido, ${user.name}`,
-              description: "Accediendo al panel de cocina...",
-            })
-            onLogin("ADMIN")
-          } else if (user.role === "CLIENT") {
-            toast({
-              title: `Bienvenido, ${user.name}`,
-              description: "Accediendo a tu dashboard...",
-            })
-            onLogin("CLIENT")
-          }
-        }
-      } else {
-        toast({
-          title: "Error de autenticación",
-          description: response.error || "Credenciales inválidas.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+    // 2. Verificamos el flag de éxito que devuelve AuthProvider
+    if (result.success) {
       toast({
-        title: "Error",
-        description: "Ocurrió un error al iniciar sesión.",
+        title: "¡Bienvenido!",
+        description: "Has iniciado sesión exitosamente.",
+      })
+
+      // 3. REDIRECCIÓN SIMPLIFICADA
+      // No chequeamos el rol aquí. Mandamos a todos al Dashboard.
+      // El componente DashboardPage (que arreglamos antes) se encarga 
+      // de decidir qué mostrar (Admin o Cliente) según el rol.
+      router.push("/dashboard") 
+      
+    } else {
+      // 4. MANEJO DE ERROR
+      // Aquí mostramos el mensaje que vino del AuthProvider
+      toast({
+        title: "Error al iniciar sesión",
+        description: result.error || "Credenciales inválidas.",
         variant: "destructive",
       })
-    } finally {
+    }
+    
+    // Nota: No hace falta setIsLoading(false) en el éxito 
+    // porque al redirigir el componente se desmonta. 
+    // Solo lo bajamos si falló.
+    if (!result.success) {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className=" bg-background flex items-center justify-center p-6">
       <Card className="w-full max-w-md border-none shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl">
         <CardHeader className="text-center space-y-4 pb-6">
           <div>
-            <h1 className="text-5xl font-serif font-bold text-primary italic mb-2">Fratelli</h1>
+                <Link href="/" className="inline-block mb-6">
+            <h1 className="text-3xl font-serif font-bold text-primary italic">Fratelli</h1>
+          </Link>
             <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-medium">Pasta Artesanal</p>
           </div>
           <div className="space-y-1.5">

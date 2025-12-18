@@ -25,14 +25,12 @@ export function RegisterForm() {
       const formData = new FormData(e.currentTarget)
 
       await authService.register({
-        name: formData.get("name") as string,
-        lastName: formData.get("lastName") as string,
+        nombre: formData.get("name") as string,
+        apellido: formData.get("lastName") as string,
         email: formData.get("email") as string,
         password: formData.get("password") as string,
-        street: formData.get("street") as string,
-        number: formData.get("number") as string,
-        city: formData.get("city") as string,
-        phone: formData.get("phone") as string,
+        direccion: `${formData.get("street")} ${formData.get("number")}, ${formData.get("city")}`,
+        telefono: formData.get("phone") as string,
       })
 
       toast({
@@ -58,7 +56,7 @@ export function RegisterForm() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-xs uppercase tracking-wider text-muted-foreground">
-            First Name
+            Nombre
           </Label>
           <Input
             id="name"
@@ -71,7 +69,7 @@ export function RegisterForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName" className="text-xs uppercase tracking-wider text-muted-foreground">
-            Last Name
+            Apellido
           </Label>
           <Input
             id="lastName"
@@ -102,7 +100,7 @@ export function RegisterForm() {
       {/* Password */}
       <div className="space-y-2">
         <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
-          Password
+          Contraseña
         </Label>
         <div className="relative">
           <Input
@@ -126,12 +124,12 @@ export function RegisterForm() {
 
       {/* Address Fields */}
       <div className="space-y-4 pt-2">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Delivery Address</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Direccion de entrega</p>
 
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 space-y-2">
             <Label htmlFor="street" className="text-xs uppercase tracking-wider text-muted-foreground">
-              Street
+              Calle
             </Label>
             <Input
               id="street"
@@ -144,7 +142,7 @@ export function RegisterForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="number" className="text-xs uppercase tracking-wider text-muted-foreground">
-              Number
+              Numero
             </Label>
             <Input
               id="number"
@@ -159,7 +157,7 @@ export function RegisterForm() {
 
         <div className="space-y-2">
           <Label htmlFor="city" className="text-xs uppercase tracking-wider text-muted-foreground">
-            City
+            Ciudad
           </Label>
           <Input
             id="city"
@@ -175,7 +173,7 @@ export function RegisterForm() {
       {/* Phone */}
       <div className="space-y-2">
         <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">
-          Phone
+          Telefono
         </Label>
         <Input
           id="phone"

@@ -4,9 +4,9 @@ import type React from "react"
 import { useState } from "react"
 import { ChefHat, MapPin, Users, LogOut, Menu, Package, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import type { AdminViewType } from "@/components/admin/admin-dashboard"
+import type {  AdminViewType } from "@/components/admin/admin-dashboard"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -89,6 +89,12 @@ export function AdminLayout({ children, activeView, onNavigate, onLogout }: Admi
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 flex flex-col">
+              <SheetHeader>
+    <SheetTitle>Menú de Navegación</SheetTitle>
+    <SheetDescription>
+      Accedé a las opciones del sistema.
+    </SheetDescription>
+  </SheetHeader>
               <NavContent />
             </SheetContent>
           </Sheet>

@@ -11,7 +11,7 @@ export interface Order {
   id: number
   userId: number
   subscriptionId: number
-  status: "PENDING" | "DELIVERED" | "CANCELLED"
+  status: "PENDIENTE" | "DELIVERED" | "CANCELLED" | "MODIFICADO"
   deliveryDate: string
   deliveryTime: string
   items: OrderItem[]

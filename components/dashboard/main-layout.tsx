@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Home, ChefHat, History, User, CreditCard, LogOut, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import type { ClientViewType } from "@/components/dashboard/client-dashboard"
 
@@ -19,10 +19,9 @@ export function MainLayout({ children, activeView, onNavigate, onLogout }: MainL
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { id: "overview" as ClientViewType, label: "Mi Caja", icon: Home },
+    { id: "overview" as ClientViewType, label: "Mi Plan", icon: Home },
     { id: "build-box" as ClientViewType, label: "Armá Tu Caja", icon: ChefHat },
     { id: "history" as ClientViewType, label: "Historial", icon: History },
-    { id: "subscription" as ClientViewType, label: "Mi Plan", icon: CreditCard },
     { id: "profile" as ClientViewType, label: "Perfil", icon: User },
   ]
 
@@ -84,11 +83,18 @@ export function MainLayout({ children, activeView, onNavigate, onLogout }: MainL
           <h1 className="text-2xl font-serif font-bold text-primary italic">Fratelli</h1>
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
+   
               <Button variant="ghost" size="sm" className="p-2">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 flex flex-col">
+                                     <SheetHeader>
+    <SheetTitle>Menú de Navegación</SheetTitle>
+    <SheetDescription>
+      Accedé a las opciones del sistema.
+    </SheetDescription>
+  </SheetHeader>
               <NavContent />
             </SheetContent>
           </Sheet>

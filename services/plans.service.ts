@@ -2,11 +2,12 @@ import axiosInstance from "@/lib/axios"
 
 export interface Plan {
   id: number
-  name: string
+  nombre: string
   description: string
   price: number
-  boxesPerMonth: number
-  benefits: string[]
+  cantidadCajas: number
+  beneficios: string[]
+  categoriasPermitidas: string[]
   active: boolean
 }
 

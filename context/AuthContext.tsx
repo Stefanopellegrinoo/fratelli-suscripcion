@@ -1,34 +1,16 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { authService } from "@/services"
-
-export interface User {
-  id: number
-  name: string
-  lastName: string
-  email: string
-  role: "CLIENT" | "ADMIN"
-}
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { authService, usersService } from "@/services"
+// Importa tus tipos User, LoginResponse, etc.
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   loading: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  register: (userData: RegisterData) => Promise<{ success: boolean; error?: string }>
+  register: (data: any) => Promise<{ success: boolean; error?: string }>
   logout: () => void
-}
-
-interface RegisterData {
-  name: string
-  lastName: string
-  email: string
-  password: string
-  street: string
-  number: string
-  city: string
-  phone: string
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -37,38 +19,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Load user from localStorage on mount
+  // 1. VERIFICACIÓN REAL AL MONTAR
   useEffect(() => {
-    const loadUser = () => {
-      try {
-        const token = localStorage.getItem("auth_token")
-        const userData = localStorage.getItem("user_data")
+    const initAuth = async () => {
+      const token = localStorage.getItem("auth_token")
 
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData)
-          setUser(parsedUser)
-        }
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        // 🔒 SEGURIDAD: No confiamos en localStorage. 
+        // Usamos el token para pedir los datos frescos al backend.
+        // Si el token es falso o expiró, esto lanzará error.
+        const userData = await usersService.getMyProfile()
+        setUser(userData)
       } catch (error) {
-        console.error("Error loading user session:", error)
-        localStorage.removeItem("auth_token")
-        localStorage.removeItem("user_data")
+        console.error("Sesión inválida o expirada:", error)
+        logout() // Si falla, limpiamos todo
       } finally {
         setLoading(false)
       }
     }
 
-    loadUser()
+    initAuth()
   }, [])
 
   const login = async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password })
 
-      // Store token and user data
+      // Guardamos SOLO el token. Los datos del usuario van a memoria (State).
       localStorage.setItem("auth_token", response.token)
-      localStorage.setItem("user_data", JSON.stringify(response.user))
-
-      setUser(response.user)
+      
+      // Axios Interceptor ahora usará este token para las siguientes peticiones.
+      
+      // Opcional: Si el login devuelve el usuario completo, lo usamos.
+      // Si solo devuelve token, hacemos una llamada extra a getMyProfile().
+      // Asumiremos que tu login devuelve User + Token:
+      setUser(response) 
 
       return { success: true }
     } catch (error: any) {
@@ -79,15 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (userData: RegisterData) => {
+  const register = async (userData: any) => {
     try {
       const response = await authService.register(userData)
-
-      // Auto-login after successful registration
+      
       localStorage.setItem("auth_token", response.token)
-      localStorage.setItem("user_data", JSON.stringify(response.user))
-
-      setUser(response.user)
+      setUser(response)
 
       return { success: true }
     } catch (error: any) {
@@ -100,12 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("auth_token")
-    localStorage.removeItem("user_data")
     setUser(null)
-
-    // Redirect to login
+    
     if (typeof window !== "undefined") {
-      window.location.href = "/dashboard"
+        window.location.href = "/login"
     }
   }
 

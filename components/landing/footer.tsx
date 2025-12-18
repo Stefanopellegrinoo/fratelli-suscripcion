@@ -1,104 +1,65 @@
-import Link from "next/link"
+import Link from "next/link";
+import { Instagram, Mail, Phone } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/50 bg-secondary/20">
-      <div className="container max-w-6xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <Link href="/" className="text-2xl font-serif font-bold text-foreground italic">
-              Fratelli
-            </Link>
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-              Authentic Italian pasta, handcrafted with love since 1987.
+    <footer className="bg-secondary/30 border-t border-border/40 mt-auto">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Columna 1: Marca */}
+          <div>
+            <h3 className="font-serif text-xl font-bold italic mb-4">Fratelli</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Pastas artesanales directo a tu mesa. Suscribite y olvidate de cocinar, nosotros nos encargamos del resto.
             </p>
           </div>
 
-          {/* Links */}
+          {/* Columna 2: Links Legales (OBLIGATORIO PARA MP) */}
           <div>
-            <h4 className="font-serif font-semibold text-foreground mb-4">Menu</h4>
-            <ul className="space-y-3">
+            <h4 className="font-medium mb-4 uppercase tracking-wider text-xs">Legales</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="#plans" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Our Plans
+                <Link href="/terminos" className="hover:text-primary transition-colors">
+                  Términos y Condiciones
                 </Link>
               </li>
               <li>
-                <Link
-                  href="#how-it-works"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  How It Works
+                <Link href="/privacidad" className="hover:text-primary transition-colors">
+                  Política de Privacidad
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Build Your Box
-                </Link>
+                <a href="https://www.argentina.gob.ar/defensadelconsumidor" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                  Defensa del Consumidor
+                </a>
               </li>
             </ul>
           </div>
 
+          {/* Columna 3: Contacto (OBLIGATORIO PARA MP) */}
           <div>
-            <h4 className="font-serif font-semibold text-foreground mb-4">Company</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Our Story
-                </Link>
+            <h4 className="font-medium mb-4 uppercase tracking-wider text-xs">Contacto</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span>contacto@fratelli.com.ar</span> {/* Poné un mail real tuyo */}
               </li>
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Artisans
-                </Link>
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <span>+54 9 11 1234-5678</span> {/* Poné un celu real */}
               </li>
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Sustainability
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif font-semibold text-foreground mb-4">Support</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Shipping
-                </Link>
+              <li className="flex items-center gap-2">
+                <Instagram className="h-4 w-4" />
+                <span>@fratelli.pastas</span>
               </li>
             </ul>
           </div>
         </div>
-
-        {/* Bottom */}
-        <div className="border-t border-border/50 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">© 2025 Fratelli. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms of Service
-            </Link>
-          </div>
+        
+        <div className="border-t border-border/40 mt-8 pt-8 text-center text-xs text-muted-foreground">
+          <p>© {new Date().getFullYear()} Fratelli Pastas. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
-  )
+  );
 }

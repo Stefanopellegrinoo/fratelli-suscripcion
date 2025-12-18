@@ -11,8 +11,9 @@ export function AuthLayout({ children, imageQuery, imageAlt }: AuthLayoutProps) 
       {/* Left half - Image */}
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
-          src={`/.jpg?height=1200&width=800&query=${encodeURIComponent(imageQuery)}`}
-          alt={imageAlt}
+         // src={`/.jpg?height=100&width=800&query=${encodeURIComponent(imageQuery)}`}
+         src={imageQuery} 
+         alt={imageAlt}
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Subtle overlay for text readability if needed */}

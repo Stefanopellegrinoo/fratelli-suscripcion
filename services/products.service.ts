@@ -4,7 +4,7 @@ export interface Product {
   id: number
   name: string
   description: string
-  category: "Clásica" | "Rellena" | "Premium"
+  category: "CLASICA" | "RELLENA" | "PREMIUM"
   price: number
   imageUrl: string
   inStock: boolean

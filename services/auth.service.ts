@@ -7,14 +7,12 @@ interface LoginCredentials {
 }
 
 interface RegisterData {
-  name: string
-  lastName: string
+  nombre: string
+  apellido: string
   email: string
   password: string
-  street: string
-  number: string
-  city: string
-  phone: string
+  direccion: string
+  telefono: string
 }
 
 interface AuthResponse {
